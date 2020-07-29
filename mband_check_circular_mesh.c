@@ -3,6 +3,7 @@
 #define NODE 4
 
 void *malloc2d(size_t size, int row, int col);
+void *malloc3d(size_t size, int i, int j, int k);
 
 int main(void)
 {
@@ -87,13 +88,22 @@ int main(void)
         }
     }
 
+    /*
     for(int i=0; i<nelement; i++){
         printf("%d:( %d, %d, %d, %d)\n", i, nbool[i][0], nbool[i][1], nbool[i][2], nbool[i][3]);
     }
+    */
+    printf("nelem = %d\n", nelement);
+    printf("nnode = %d\n", nnode);
 
     // ここから全体行列の作成
-    int glb_mt[nnode][nnode]; // 全体行列
-    int locl_mt[nelement][NODE][NODE];
+
+    int **glb_mt;
+    glb_mt = (int **)malloc2d(sizeof(int), nnode, nnode);
+    //int glb_mt[nnode][nnode]; // 全体行列
+    int ***locl_mt;
+    locl_mt = (int ***)malloc3d(sizeof(int), nelement, NODE, NODE);
+    //int locl_mt[nelement][NODE][NODE];
 
     // 全体行列の初期化
     for(int i=0; i<nnode; i++){
@@ -112,6 +122,7 @@ int main(void)
     }
 
     // 全体行列の作成
+    printf("全体行列の作成開始\n");
     for(ie=0; ie<nelement; ie++){
         for(int i=0; i<NODE; i++){
             int nu1 = nbool[ie][i];
@@ -121,13 +132,15 @@ int main(void)
             }
         }
     }
-
+    /*
     for(int i=0; i<nnode; i++){
         for(int j=0; j<nnode; j++){
             printf("%3d", glb_mt[i][j]);
         }
         printf("\n");
     }
+    */
+    printf("全体行列の作成完了\n");
 
     // 全体行列の帯幅と半帯幅を求める
     int non_zero_range = -1; // 帯幅
@@ -156,6 +169,8 @@ int main(void)
     printf("最大帯幅の行 = %d, 帯幅 = %d\n", max_band_range_i, non_zero_range);
 
 
+    free(glb_mt);
+    free(locl_mt);
     free(nbool);
 
     return 0;
@@ -177,4 +192,32 @@ void *malloc2d(size_t size, int row, int col)
       return a;
   }
   return NULL;
+}
+
+void *malloc3d(size_t size, int i, int j, int k)
+{
+	char ***a, **b, *c;
+	int  t = size * k;
+	int idx1, idx2;
+
+	// インデックスと要素を一気に確保
+	a = (char***)malloc((sizeof(*a) + sizeof(**a) * j + t * j) * i);
+
+	if (a) {
+		b = (char**)(a + i);
+		c = (char*)(b + i * j);
+
+		for (idx1 = 0; idx1 < i; idx1++) {
+			a[idx1] = b;
+			for (idx2 = 0; idx2 < j; idx2++) {
+				b[idx2] = c;
+				c += t;
+			}
+			b += j;
+		}
+
+		return a;
+	}
+
+	return NULL;
 }
